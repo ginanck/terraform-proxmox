@@ -3,9 +3,8 @@ terraform {
 
   required_providers {
     proxmox = {
-      source                = "bpg/proxmox"
-      version               = "0.90.0"
-      configuration_aliases = [proxmox]
+      source  = "bpg/proxmox"
+      version = "0.90.0"
     }
     null = {
       source  = "hashicorp/null"
