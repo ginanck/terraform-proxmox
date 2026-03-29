@@ -99,15 +99,15 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
   # Primary network device
   network_device {
-    bridge      = lookup(each.value, "network_bridge", var.network_bridge)
-    enabled     = lookup(each.value, "network_enabled", var.network_enabled)
-    firewall    = lookup(each.value, "network_firewall", var.network_firewall)
-    mac_address = lookup(each.value, "network_mac_address", var.network_mac_address)
-    model       = lookup(each.value, "network_model", var.network_model)
-    mtu         = lookup(each.value, "network_mtu", var.network_mtu)
-    queues      = lookup(each.value, "network_queues", var.network_queues)
-    rate_limit  = lookup(each.value, "network_rate_limit", var.network_rate_limit)
-    vlan_id     = lookup(each.value, "network_vlan_id", var.network_vlan_id)
+    bridge      = local.vm_network_primary[each.key].bridge
+    enabled     = local.vm_network_primary[each.key].enabled
+    firewall    = local.vm_network_primary[each.key].firewall
+    mac_address = local.vm_network_primary[each.key].mac_address
+    model       = local.vm_network_primary[each.key].model
+    mtu         = local.vm_network_primary[each.key].mtu
+    queues      = local.vm_network_primary[each.key].queues
+    rate_limit  = local.vm_network_primary[each.key].rate_limit
+    vlan_id     = local.vm_network_primary[each.key].vlan_id
   }
 
   # Additional network devices
@@ -137,14 +137,14 @@ resource "proxmox_virtual_environment_vm" "vm" {
 
     ip_config {
       ipv4 {
-        address = each.value.ip_address
-        gateway = lookup(each.value, "init_gateway", var.init_gateway)
+        address = local.vm_network_primary[each.key].address
+        gateway = local.vm_network_primary[each.key].address == "dhcp" ? null : local.vm_network_primary[each.key].gateway
       }
     }
 
-    # Additional IP configurations
+    # Additional IP configurations (derived from network_additional)
     dynamic "ip_config" {
-      for_each = lookup(each.value, "additional_ip_configs", var.additional_ip_configs)
+      for_each = lookup(each.value, "network_additional", var.network_additional)
       content {
         ipv4 {
           address = lookup(ip_config.value, "address", null)
@@ -166,9 +166,14 @@ resource "proxmox_virtual_environment_vm" "vm" {
 # =============================================================================
 
 locals {
+  # Merge per-VM network_primary overrides with module-level defaults
+  vm_network_primary = {
+    for k, v in var.vms : k => merge(var.network_primary, lookup(v, "network_primary", {}))
+  }
+
   # Extract host IP addresses for each VM
   vm_host_ips = {
-    for k, v in var.vms : k => split("/", v.ip_address)[0]
+    for k, v in var.vms : k => split("/", local.vm_network_primary[k].address)[0]
   }
 
   # Filter only Windows VMs that need updates

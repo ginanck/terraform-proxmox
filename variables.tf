@@ -423,75 +423,27 @@ variable "disk_additional" {
 }
 
 # =============================================================================
-# PRIMARY NETWORK DEVICE
+# PRIMARY NETWORK INTERFACE
 # =============================================================================
 
-variable "network_bridge" {
-  description = "Network bridge for primary network device"
-  type        = string
-  default     = "vmbr0"
-}
-
-variable "network_model" {
-  description = "Network model (virtio, e1000, rtl8139)"
-  type        = string
-  default     = "virtio"
-  validation {
-    condition = contains([
-      "virtio",
-      "e1000",
-      "e1000-82540em",
-      "e1000-82544gc",
-      "e1000-82545em",
-      "rtl8139",
-      "ne2k_pci",
-      "pcnet",
-      "vmxnet3"
-    ], var.network_model)
-    error_message = "Network model must be one of: virtio, e1000, e1000-82540em, e1000-82544gc, e1000-82545em, rtl8139, ne2k_pci, pcnet, vmxnet3."
-  }
-}
-
-variable "network_enabled" {
-  description = "Enable primary network device"
-  type        = bool
-  default     = true
-}
-
-variable "network_firewall" {
-  description = "Enable firewall for primary network device"
-  type        = bool
-  default     = false
-}
-
-variable "network_mac_address" {
-  description = "MAC address for primary network device (auto-generated if null)"
-  type        = string
-  default     = null
-}
-
-variable "network_mtu" {
-  description = "MTU for primary network device (0 = default)"
-  type        = number
-  default     = 0
-}
-
-variable "network_queues" {
-  description = "Number of packet queues (0 = default)"
-  type        = number
-  default     = 0
-}
-
-variable "network_rate_limit" {
-  description = "Rate limit in MB/s (0 = unlimited)"
-  type        = number
-  default     = 0
-}
-
-variable "network_vlan_id" {
-  description = "VLAN ID (0 = no VLAN)"
-  type        = number
-  default     = 0
+variable "network_primary" {
+  description = "Primary network interface configuration combining NIC settings (Proxmox layer) and IP configuration (Cloud-Init layer)."
+  type = object({
+    # Network device settings (Proxmox layer)
+    bridge      = optional(string, "vmbr0")
+    model       = optional(string, "virtio")
+    enabled     = optional(bool, true)
+    firewall    = optional(bool, false)
+    mac_address = optional(string)
+    mtu         = optional(number, 0)
+    queues      = optional(number, 0)
+    rate_limit  = optional(number, 0)
+    vlan_id     = optional(number, 0)
+    # IP configuration (Cloud-Init layer)
+    address = optional(string, "dhcp")
+    gateway = optional(string)
+  })
+  default = {}
 }
 
 # =============================================================================
@@ -499,8 +451,9 @@ variable "network_vlan_id" {
 # =============================================================================
 
 variable "network_additional" {
-  description = "Optional list of additional network devices to attach to the VM. Leave empty (default) if only the primary network device is needed."
+  description = "Optional list of additional network interfaces. Each entry creates both a network device (Proxmox layer) and its corresponding IP configuration (Cloud-Init layer). The positional order determines NIC mapping: index 0 -> eth1, index 1 -> eth2, etc."
   type = list(object({
+    # Network device settings (Proxmox layer)
     bridge      = optional(string, "vmbr2")
     model       = optional(string, "virtio")
     enabled     = optional(bool, true)
@@ -510,10 +463,11 @@ variable "network_additional" {
     queues      = optional(number, 0)
     rate_limit  = optional(number, 0)
     vlan_id     = optional(number, 0)
+    # IP configuration (Cloud-Init layer)
+    address = optional(string)
+    gateway = optional(string)
   }))
   default = []
-
-  # This variable is entirely optional - VMs will work perfectly fine with just the primary network device
 }
 
 # =============================================================================
@@ -538,17 +492,6 @@ variable "init_dns_servers" {
   default     = ["8.8.8.8", "8.8.4.4"]
 }
 
-variable "init_ip_address" {
-  description = "Primary IP address with CIDR (e.g., 172.16.2.100/24)"
-  type        = string
-  default     = "172.16.2.100"
-}
-
-variable "init_gateway" {
-  description = "Default gateway IP address"
-  type        = string
-}
-
 variable "init_username" {
   description = "Default user account username"
   type        = string
@@ -565,21 +508,6 @@ variable "init_ssh_keys" {
   description = "List of SSH public keys for default user"
   type        = list(string)
   default     = []
-}
-
-# =============================================================================
-# ADDITIONAL IP CONFIGURATIONS (OPTIONAL)
-# =============================================================================
-
-variable "additional_ip_configs" {
-  description = "Optional list of additional IP configurations for multi-homed network setups. Leave empty (default) if only the primary IP configuration is needed."
-  type = list(object({
-    address = string
-    gateway = optional(string)
-  }))
-  default = []
-
-  # This variable is entirely optional - VMs will work perfectly fine with just the primary IP configuration
 }
 
 # =============================================================================
