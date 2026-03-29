@@ -7,10 +7,14 @@ module "vm" {
   # Common defaults
   node_name        = "carbon"
   clone_vm_id      = 9000
-  init_gateway     = "172.16.2.1"
   init_dns_servers = ["8.8.8.8", "8.8.4.4"]
   init_username    = "admin"
   init_ssh_keys    = [var.ssh_public_key]
+
+  # Primary network defaults
+  network_primary = {
+    gateway = "172.16.2.1"
+  }
 
   # CPU & Memory defaults
   cpu_cores        = 4
@@ -22,10 +26,12 @@ module "vm" {
 
   vms = {
     web-01 = {
-      name       = "web-01"
-      vm_id      = 200
-      ip_address = "172.16.2.10/24"
-      tags       = ["staging", "web"]
+      name  = "web-01"
+      vm_id = 200
+      tags  = ["staging", "web"]
+      network_primary = {
+        address = "172.16.2.10/24"
+      }
 
       # Additional disk
       disk_additional = [
@@ -35,26 +41,22 @@ module "vm" {
         }
       ]
 
-      # Additional network device
+      # Additional network interface (NIC + IP config combined)
       network_additional = [
         {
-          bridge = "vmbr1"
-        }
-      ]
-
-      # Additional IP configuration for second NIC
-      additional_ip_configs = [
-        {
+          bridge  = "vmbr1"
           address = "10.0.1.10/24"
         }
       ]
     }
 
     web-02 = {
-      name       = "web-02"
-      vm_id      = 201
-      ip_address = "172.16.2.11/24"
-      tags       = ["staging", "web"]
+      name  = "web-02"
+      vm_id = 201
+      tags  = ["staging", "web"]
+      network_primary = {
+        address = "172.16.2.11/24"
+      }
     }
   }
 }

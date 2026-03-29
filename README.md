@@ -145,7 +145,6 @@ No modules.
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_acpi"></a> [acpi](#input\_acpi) | Enable ACPI support | `bool` | `true` | no |
-| <a name="input_additional_ip_configs"></a> [additional\_ip\_configs](#input\_additional\_ip\_configs) | Optional list of additional IP configurations for multi-homed network setups. Leave empty (default) if only the primary IP configuration is needed. | <pre>list(object({<br/>    address = string<br/>    gateway = optional(string)<br/>  }))</pre> | `[]` | no |
 | <a name="input_agent_enabled"></a> [agent\_enabled](#input\_agent\_enabled) | Enable QEMU guest agent | `bool` | `true` | no |
 | <a name="input_bios"></a> [bios](#input\_bios) | BIOS type (seabios or ovmf) | `string` | `"seabios"` | no |
 | <a name="input_clone_datastore_id"></a> [clone\_datastore\_id](#input\_clone\_datastore\_id) | Datastore ID for clone operation | `string` | `"data"` | no |
@@ -175,9 +174,7 @@ No modules.
 | <a name="input_force_update"></a> [force\_update](#input\_force\_update) | Run post-initialization tasks when true (default=false). Set to true for subsequent applies to execute post-init provisioners. | `bool` | `false` | no |
 | <a name="input_init_datastore_id"></a> [init\_datastore\_id](#input\_init\_datastore\_id) | Datastore ID for cloud-init drive | `string` | `"data"` | no |
 | <a name="input_init_dns_servers"></a> [init\_dns\_servers](#input\_init\_dns\_servers) | List of DNS servers | `list(string)` | <pre>[<br/>  "8.8.8.8",<br/>  "8.8.4.4"<br/>]</pre> | no |
-| <a name="input_init_gateway"></a> [init\_gateway](#input\_init\_gateway) | Default gateway IP address | `string` | n/a | yes |
 | <a name="input_init_interface"></a> [init\_interface](#input\_init\_interface) | Interface for cloud-init drive | `string` | `"scsi0"` | no |
-| <a name="input_init_ip_address"></a> [init\_ip\_address](#input\_init\_ip\_address) | Primary IP address with CIDR (e.g., 172.16.2.100/24) | `string` | `"172.16.2.100"` | no |
 | <a name="input_init_password"></a> [init\_password](#input\_init\_password) | Default user account password | `string` | `"dummy"` | no |
 | <a name="input_init_ssh_keys"></a> [init\_ssh\_keys](#input\_init\_ssh\_keys) | List of SSH public keys for default user | `list(string)` | `[]` | no |
 | <a name="input_init_username"></a> [init\_username](#input\_init\_username) | Default user account username | `string` | `"dummy"` | no |
@@ -189,16 +186,8 @@ No modules.
 | <a name="input_memory_shared"></a> [memory\_shared](#input\_memory\_shared) | Shared memory in MB | `number` | `0` | no |
 | <a name="input_migrate"></a> [migrate](#input\_migrate) | Enable live migration | `bool` | `false` | no |
 | <a name="input_name"></a> [name](#input\_name) | VM name (default, can be overridden per VM) | `string` | `""` | no |
-| <a name="input_network_additional"></a> [network\_additional](#input\_network\_additional) | Optional list of additional network devices to attach to the VM. Leave empty (default) if only the primary network device is needed. | <pre>list(object({<br/>    bridge      = optional(string, "vmbr2")<br/>    model       = optional(string, "virtio")<br/>    enabled     = optional(bool, true)<br/>    firewall    = optional(bool, false)<br/>    mac_address = optional(string)<br/>    mtu         = optional(number, 0)<br/>    queues      = optional(number, 0)<br/>    rate_limit  = optional(number, 0)<br/>    vlan_id     = optional(number, 0)<br/>  }))</pre> | `[]` | no |
-| <a name="input_network_bridge"></a> [network\_bridge](#input\_network\_bridge) | Network bridge for primary network device | `string` | `"vmbr0"` | no |
-| <a name="input_network_enabled"></a> [network\_enabled](#input\_network\_enabled) | Enable primary network device | `bool` | `true` | no |
-| <a name="input_network_firewall"></a> [network\_firewall](#input\_network\_firewall) | Enable firewall for primary network device | `bool` | `false` | no |
-| <a name="input_network_mac_address"></a> [network\_mac\_address](#input\_network\_mac\_address) | MAC address for primary network device (auto-generated if null) | `string` | `null` | no |
-| <a name="input_network_model"></a> [network\_model](#input\_network\_model) | Network model (virtio, e1000, rtl8139) | `string` | `"virtio"` | no |
-| <a name="input_network_mtu"></a> [network\_mtu](#input\_network\_mtu) | MTU for primary network device (0 = default) | `number` | `0` | no |
-| <a name="input_network_queues"></a> [network\_queues](#input\_network\_queues) | Number of packet queues (0 = default) | `number` | `0` | no |
-| <a name="input_network_rate_limit"></a> [network\_rate\_limit](#input\_network\_rate\_limit) | Rate limit in MB/s (0 = unlimited) | `number` | `0` | no |
-| <a name="input_network_vlan_id"></a> [network\_vlan\_id](#input\_network\_vlan\_id) | VLAN ID (0 = no VLAN) | `number` | `0` | no |
+| <a name="input_network_additional"></a> [network\_additional](#input\_network\_additional) | Optional list of additional network interfaces. Each entry creates both a network device (Proxmox layer) and its corresponding IP configuration (Cloud-Init layer). The positional order determines NIC mapping: index 0 -> eth1, index 1 -> eth2, etc. | <pre>list(object({<br/>    # Network device settings (Proxmox layer)<br/>    bridge      = optional(string, "vmbr2")<br/>    model       = optional(string, "virtio")<br/>    enabled     = optional(bool, true)<br/>    firewall    = optional(bool, false)<br/>    mac_address = optional(string)<br/>    mtu         = optional(number, 0)<br/>    queues      = optional(number, 0)<br/>    rate_limit  = optional(number, 0)<br/>    vlan_id     = optional(number, 0)<br/>    # IP configuration (Cloud-Init layer)<br/>    address = optional(string)<br/>    gateway = optional(string)<br/>  }))</pre> | `[]` | no |
+| <a name="input_network_primary"></a> [network\_primary](#input\_network\_primary) | Primary network interface configuration combining NIC settings (Proxmox layer) and IP configuration (Cloud-Init layer). | <pre>object({<br/>    # Network device settings (Proxmox layer)<br/>    bridge      = optional(string, "vmbr0")<br/>    model       = optional(string, "virtio")<br/>    enabled     = optional(bool, true)<br/>    firewall    = optional(bool, false)<br/>    mac_address = optional(string)<br/>    mtu         = optional(number, 0)<br/>    queues      = optional(number, 0)<br/>    rate_limit  = optional(number, 0)<br/>    vlan_id     = optional(number, 0)<br/>    # IP configuration (Cloud-Init layer)<br/>    address = optional(string, "dhcp")<br/>    gateway = optional(string)<br/>  })</pre> | `{}` | no |
 | <a name="input_node_name"></a> [node\_name](#input\_node\_name) | Proxmox node name where the VM will be created | `string` | `"carbon"` | no |
 | <a name="input_on_boot"></a> [on\_boot](#input\_on\_boot) | Start VM on node boot | `bool` | `true` | no |
 | <a name="input_protection"></a> [protection](#input\_protection) | Enable VM protection (prevents accidental deletion) | `bool` | `false` | no |
